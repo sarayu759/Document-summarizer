@@ -1,14 +1,10 @@
-from langchain_community.vectorstores import Chroma
-from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from utils.llm import call_llm
-
-embeddings = HuggingFaceEmbeddings()
 
 
 def build_db(text):
     if not text.strip():
-        return None
+        return []
 
     splitter = RecursiveCharacterTextSplitter(
         chunk_size=800,
@@ -17,27 +13,37 @@ def build_db(text):
 
     chunks = splitter.split_text(text)
 
-    return Chroma.from_texts(chunks, embeddings)
+    return chunks
 
 
 def ask_question(db, question):
-    if db is None:
+    if not db:
         return "⚠️ No document loaded"
 
-    docs = db.similarity_search(question, k=4)
+    # simple keyword matching (lightweight retrieval)
+    relevant_chunks = []
 
-    if not docs:
-        return "⚠️ No relevant content found"
+    for chunk in db:
+        if any(word.lower() in chunk.lower() for word in question.split()):
+            relevant_chunks.append(chunk)
 
-    context = "\n\n".join([d.page_content for d in docs])
+    if not relevant_chunks:
+        relevant_chunks = db[:3]  # fallback
+
+    context = "\n\n".join(relevant_chunks[:4])
 
     return call_llm(f"""
-Answer ONLY using this context.
-If not found, say "Not found in document".
+You are a precise assistant.
+
+Answer ONLY using the context below.
+Do NOT guess.
+If answer not present, say: "Not found in document".
 
 Context:
 {context}
 
 Question:
 {question}
+
+Give a clear and concise answer.
 """, 400)
