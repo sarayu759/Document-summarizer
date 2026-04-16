@@ -1,0 +1,9 @@
+venv/
+.env
+uploaded_docs/
+__pycache__/
+*.pdf
+*.png
+*.jpg
+*.jpeg
+*.csv
