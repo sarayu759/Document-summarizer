@@ -4,27 +4,14 @@ from utils.file_handler import extract_text
 from utils.summarizer import summarize_multiple_documents
 from utils.qa_engine import build_db, ask_question
 
-st.set_page_config(page_title="AI Doc Agent", layout="wide")
-
-st.title("📄 AI Document Intelligence System")
-
 UPLOAD_DIR = "uploaded_docs"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
-if "text" not in st.session_state:
-    st.session_state.text = ""
+st.title("📄 AI Document Summarizer + Q&A")
 
-if "db" not in st.session_state:
-    st.session_state.db = None
+uploaded = st.file_uploader("Upload files", accept_multiple_files=True)
 
-if "chat" not in st.session_state:
-    st.session_state.chat = []
-
-uploaded = st.sidebar.file_uploader(
-    "Upload files",
-    type=["pdf", "csv", "png", "jpg", "jpeg"],
-    accept_multiple_files=True
-)
+# ------------------ TEXT EXTRACTION ------------------
 
 if uploaded:
     texts = []
@@ -47,36 +34,50 @@ if uploaded:
         else:
             text = ""
 
-        st.write(f"📄 Extracted from {f.name}:", text[:300])
-
         if text.strip():
             texts.append(text)
 
-    st.session_state.text = "\n\n".join(texts)
+    # 🔥 IMPORTANT: SAVE TEXT
+    full_text = "\n".join(texts)
+    st.session_state.text = full_text
 
-tabs = st.tabs(["Preview", "Summary", "Q&A"])
+    st.success("✅ Document loaded successfully")
 
-with tabs[0]:
-    st.text_area("Preview", st.session_state.text[:5000], height=400)
+# ------------------ TABS ------------------
 
-with tabs[1]:
+tab1, tab2, tab3 = st.tabs(["Preview", "Summary", "Q&A"])
+
+# ------------------ PREVIEW ------------------
+
+with tab1:
+    if "text" in st.session_state:
+        st.text_area("Preview", st.session_state.text[:2000], height=300)
+
+# ------------------ SUMMARY ------------------
+
+with tab2:
     if st.button("Generate Summary"):
-        st.write(summarize_multiple_documents([st.session_state.text]))
+        if "text" not in st.session_state or not st.session_state.text.strip():
+            st.error("⚠️ Please upload a document first")
+        else:
+            summary = summarize_multiple_documents(st.session_state.text)
+            st.write(summary)
 
-with tabs[2]:
+# ------------------ Q&A ------------------
+
+with tab3:
     if st.button("Enable Q&A"):
-        st.session_state.db = build_db(st.session_state.text)
-        st.success("Q&A Ready")
+        if "text" not in st.session_state or not st.session_state.text.strip():
+            st.error("⚠️ Please upload a document first")
+        else:
+            st.session_state.db = build_db(st.session_state.text)
+            st.success("Q&A Ready")
 
     q = st.text_input("Ask a question")
 
     if q:
-        if st.session_state.db is None:
-            st.warning("Click Enable Q&A first")
+        if "db" not in st.session_state:
+            st.warning("⚠️ Enable Q&A first")
         else:
-            ans = ask_question(st.session_state.db, q)
-            st.session_state.chat.append((q, ans))
-
-    for q, a in st.session_state.chat:
-        st.write("🧑", q)
-        st.write("🤖", a)
+            answer = ask_question(st.session_state.db, q)
+            st.write(answer)

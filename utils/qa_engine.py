@@ -20,7 +20,6 @@ def ask_question(db, question):
     if not db:
         return "⚠️ No document loaded"
 
-    # simple keyword matching (lightweight retrieval)
     relevant_chunks = []
 
     for chunk in db:
@@ -28,7 +27,7 @@ def ask_question(db, question):
             relevant_chunks.append(chunk)
 
     if not relevant_chunks:
-        relevant_chunks = db[:3]  # fallback
+        relevant_chunks = db[:3]
 
     context = "\n\n".join(relevant_chunks[:4])
 
