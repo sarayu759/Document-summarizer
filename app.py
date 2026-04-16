@@ -4,6 +4,16 @@ from utils.file_handler import extract_text
 from utils.summarizer import summarize_multiple_documents
 from utils.qa_engine import build_db, ask_question
 
+# ------------------ INIT SESSION ------------------
+
+if "text" not in st.session_state:
+    st.session_state.text = ""
+
+if "db" not in st.session_state:
+    st.session_state.db = None
+
+# ------------------ CONFIG ------------------
+
 UPLOAD_DIR = "uploaded_docs"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
@@ -11,7 +21,7 @@ st.title("📄 AI Document Summarizer + Q&A")
 
 uploaded = st.file_uploader("Upload files", accept_multiple_files=True)
 
-# ------------------ TEXT EXTRACTION ------------------
+# ------------------ FILE PROCESSING ------------------
 
 if uploaded:
     texts = []
@@ -37,9 +47,9 @@ if uploaded:
         if text.strip():
             texts.append(text)
 
-    # 🔥 IMPORTANT: SAVE TEXT
-    full_text = "\n".join(texts)
-    st.session_state.text = full_text
+    # 🔥 STORE TEXT PROPERLY
+    st.session_state.text = "\n".join(texts)
+    st.session_state.db = None
 
     st.success("✅ Document loaded successfully")
 
@@ -50,14 +60,14 @@ tab1, tab2, tab3 = st.tabs(["Preview", "Summary", "Q&A"])
 # ------------------ PREVIEW ------------------
 
 with tab1:
-    if "text" in st.session_state:
+    if st.session_state.text:
         st.text_area("Preview", st.session_state.text[:2000], height=300)
 
 # ------------------ SUMMARY ------------------
 
 with tab2:
     if st.button("Generate Summary"):
-        if "text" not in st.session_state or not st.session_state.text.strip():
+        if not st.session_state.text:
             st.error("⚠️ Please upload a document first")
         else:
             summary = summarize_multiple_documents(st.session_state.text)
@@ -67,7 +77,7 @@ with tab2:
 
 with tab3:
     if st.button("Enable Q&A"):
-        if "text" not in st.session_state or not st.session_state.text.strip():
+        if not st.session_state.text:
             st.error("⚠️ Please upload a document first")
         else:
             st.session_state.db = build_db(st.session_state.text)
@@ -76,7 +86,7 @@ with tab3:
     q = st.text_input("Ask a question")
 
     if q:
-        if "db" not in st.session_state:
+        if not st.session_state.db:
             st.warning("⚠️ Enable Q&A first")
         else:
             answer = ask_question(st.session_state.db, q)
