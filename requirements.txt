@@ -4,8 +4,9 @@ python-dotenv
 langchain
 langchain-community
 langchain-text-splitters
-faiss-cpu==1.7.4
+chromadb
 sentence-transformers
 pypdf
 pandas
 pillow
+numpy
