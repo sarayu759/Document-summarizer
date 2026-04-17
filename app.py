@@ -4,7 +4,7 @@ from utils.file_handler import extract_text
 from utils.summarizer import summarize_multiple_documents
 from utils.qa_engine import build_db, ask_question
 
-# ---------------- INIT ----------------
+# ---------------- SESSION INIT ----------------
 if "text" not in st.session_state:
     st.session_state.text = ""
 
@@ -40,19 +40,16 @@ if uploaded:
         else:
             text = ""
 
-        # only valid text
-        if text and text.strip() and "ERROR" not in text:
+        if text and text.strip():
             texts.append(text)
 
     if texts:
         st.session_state.text = "\n".join(texts)
         st.session_state.db = None
         st.success("✅ Document loaded successfully")
-
     else:
-    # 🔥 NEVER EMPTY AGAIN
-        st.session_state.text = "Image uploaded but no text extracted. Proceeding with AI understanding."
-        st.warning("⚠️ Image had no readable text, using AI fallback.")
+        st.session_state.text = ""
+        st.error("❌ Could not extract content from file")
 
 # ---------------- TABS ----------------
 tab1, tab2, tab3 = st.tabs(["Preview", "Summary", "Q&A"])
@@ -65,8 +62,8 @@ with tab1:
 # ---------------- SUMMARY ----------------
 with tab2:
     if st.button("Generate Summary"):
-        if not st.session_state.text or len(st.session_state.text.strip()) < 10:
-            st.error("⚠️ Please upload a valid document first")
+        if not st.session_state.text:
+            st.error("⚠️ Upload a document first")
         else:
             summary = summarize_multiple_documents(st.session_state.text)
             st.write(summary)
@@ -75,7 +72,7 @@ with tab2:
 with tab3:
     if st.button("Enable Q&A"):
         if not st.session_state.text:
-            st.error("⚠️ Please upload document first")
+            st.error("⚠️ Upload document first")
         else:
             st.session_state.db = build_db(st.session_state.text)
             st.success("Q&A Ready")

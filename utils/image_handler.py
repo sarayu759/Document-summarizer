@@ -13,7 +13,7 @@ def extract_image_text(path):
                 {
                     "role": "user",
                     "content": [
-                        {"type": "text", "text": "Extract all useful information from this image. Give summary and key points."},
+                        {"type": "text", "text": "Extract all meaningful information from this image. Give a clear summary and key points."},
                         {
                             "type": "image_url",
                             "image_url": {
