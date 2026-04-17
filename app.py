@@ -1,10 +1,11 @@
 import streamlit as st
 import os
-import base64
+
 from utils.file_handler import extract_text
 from utils.summarizer import summarize_multiple_documents
 from utils.qa_engine import build_db, ask_question
-from utils.llm import call_vision_llm
+from utils.llm import call_llm
+from utils.gemini_vision import analyze_image
 
 # ---------------- SESSION ----------------
 if "text" not in st.session_state:
@@ -16,16 +17,15 @@ if "db" not in st.session_state:
 UPLOAD_DIR = "uploaded_docs"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
-st.title("📄 AI Document Summarizer + Q&A")
+st.title("📄 AI Document Summarizer + Q&A (Hybrid AI)")
 
-# ✅ FIXED DUPLICATE ERROR
 uploaded = st.file_uploader(
     "Upload files",
     accept_multiple_files=True,
     key="file_uploader_main"
 )
 
-# ---------------- PROCESS FILES ----------------
+# ---------------- FILE PROCESS ----------------
 if uploaded:
     texts = []
 
@@ -47,19 +47,16 @@ if uploaded:
             if text:
                 texts.append(text)
 
-        # -------- IMAGE (VISION MODEL) --------
+        # -------- IMAGE (GEMINI) --------
         elif f.name.lower().endswith((".png", ".jpg", ".jpeg")):
-            with open(path, "rb") as img:
-                base64_image = base64.b64encode(img.read()).decode()
+            st.info("🧠 Processing image with Gemini AI...")
 
-            st.info("🧠 Processing image with AI...")
-
-            text = call_vision_llm(base64_image)
-
-            if text:
-                texts.append(text)
-            else:
-                texts.append("Image uploaded but no detailed description generated.")
+            try:
+                text = analyze_image(path)
+                if text:
+                    texts.append(text)
+            except Exception as e:
+                st.error("❌ Image processing failed")
 
     # -------- FINAL STORE --------
     if texts:
@@ -67,8 +64,8 @@ if uploaded:
         st.session_state.db = None
         st.success("✅ Document processed successfully")
     else:
-        st.session_state.text = "No content extracted, but file uploaded."
-        st.warning("⚠️ Could not extract structured text, continuing.")
+        st.session_state.text = ""
+        st.error("❌ Could not extract content")
 
 # ---------------- TABS ----------------
 tab1, tab2, tab3 = st.tabs(["Preview", "Summary", "Q&A"])

@@ -1,7 +1,7 @@
 streamlit
 groq
+google-generativeai
 pypdf
 pandas
-pillow
 langchain-text-splitters
 python-dotenv
