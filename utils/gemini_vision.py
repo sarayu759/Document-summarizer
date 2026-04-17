@@ -1,17 +1,22 @@
 import streamlit as st
 import google.generativeai as genai
+from PIL import Image
 
 genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
 
 model = genai.GenerativeModel("gemini-1.5-flash")
 
+
 def analyze_image(image_path):
-    with open(image_path, "rb") as f:
-        image_bytes = f.read()
+    try:
+        image = Image.open(image_path)
 
-    response = model.generate_content([
-        "Analyze this image and extract all useful information. Give summary and key points.",
-        {"mime_type": "image/png", "data": image_bytes}
-    ])
+        response = model.generate_content([
+            "Describe this image clearly. Extract all text and summarize.",
+            image
+        ])
 
-    return response.text
+        return response.text
+
+    except Exception as e:
+        return f"❌ Gemini Error: {str(e)}"

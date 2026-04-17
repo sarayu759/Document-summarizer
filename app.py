@@ -51,12 +51,14 @@ if uploaded:
         elif f.name.lower().endswith((".png", ".jpg", ".jpeg")):
             st.info("🧠 Processing image with Gemini AI...")
 
-            try:
-                text = analyze_image(path)
-                if text:
-                    texts.append(text)
-            except Exception as e:
-                st.error("❌ Image processing failed")
+            text = analyze_image(path)
+
+            if "❌" in text:
+                st.error(text)
+            elif text.strip():
+                texts.append(text)
+            else:
+                st.warning("⚠️ No content extracted from image")
 
     # -------- FINAL STORE --------
     if texts:
