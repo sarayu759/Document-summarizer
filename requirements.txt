@@ -5,4 +5,5 @@ pypdf
 pandas
 langchain-text-splitters
 python-dotenv
+google-generativeai==0.5.4
 Pillow

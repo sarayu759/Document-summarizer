@@ -4,7 +4,7 @@ from PIL import Image
 
 genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
 
-model = genai.GenerativeModel("gemini-1.5-flash-latest")
+model = genai.GenerativeModel("gemini-pro-vision")
 
 
 def analyze_image(image_path):
