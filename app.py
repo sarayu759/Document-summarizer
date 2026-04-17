@@ -40,7 +40,7 @@ if uploaded:
         else:
             text = ""
 
-        if text and text.strip():
+        if text:
             texts.append(text)
 
     if texts:

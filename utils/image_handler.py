@@ -1,33 +1,21 @@
 import base64
-from utils.llm import client
+from utils.llm import call_vision_llm
 
 
 def extract_image_text(path):
     try:
+        # read image
         with open(path, "rb") as f:
-            image_data = base64.b64encode(f.read()).decode()
+            image_bytes = f.read()
 
-        response = client.chat.completions.create(
-            model="llama-3.2-11b-vision-preview",
-            messages=[
-                {
-                    "role": "user",
-                    "content": [
-                        {"type": "text", "text": "Extract all meaningful information from this image. Give a clear summary and key points."},
-                        {
-                            "type": "image_url",
-                            "image_url": {
-                                "url": f"data:image/png;base64,{image_data}"
-                            },
-                        },
-                    ],
-                }
-            ],
-            max_tokens=500,
-        )
+        # convert to base64
+        base64_image = base64.b64encode(image_bytes).decode("utf-8")
 
-        return response.choices[0].message.content
+        # call vision model
+        result = call_vision_llm(base64_image)
+
+        return result
 
     except Exception as e:
-        print("Vision Error:", e)
+        print("Image processing error:", e)
         return ""
