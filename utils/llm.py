@@ -3,7 +3,7 @@ from groq import Groq
 
 client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
-
+# -------- TEXT MODEL --------
 def call_llm(prompt, max_tokens=300):
     response = client.chat.completions.create(
         model="llama-3.1-8b-instant",
@@ -13,6 +13,7 @@ def call_llm(prompt, max_tokens=300):
     return response.choices[0].message.content.strip()
 
 
+# -------- VISION MODEL --------
 def call_vision_llm(base64_image):
     response = client.chat.completions.create(
         model="llama-3.2-11b-vision-preview",
@@ -20,7 +21,7 @@ def call_vision_llm(base64_image):
             {
                 "role": "user",
                 "content": [
-                    {"type": "text", "text": "Describe this image clearly. Extract all useful information."},
+                    {"type": "text", "text": "Describe this image clearly and extract all useful information."},
                     {
                         "type": "image_url",
                         "image_url": {
