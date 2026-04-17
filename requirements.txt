@@ -4,6 +4,4 @@ openai
 pypdf
 pandas
 langchain-text-splitters
-chromadb
-python-dotenv
 Pillow

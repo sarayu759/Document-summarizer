@@ -1,31 +1,31 @@
 import streamlit as st
 import os
+import base64
 
 from utils.file_handler import extract_text
 from utils.summarizer import summarize_multiple_documents
 from utils.qa_engine import build_db, ask_question
-from utils.llm import call_llm
-from utils.gemini_vision import analyze_image
+from utils.llm import call_image_llm
 
-# ---------------- SESSION ----------------
+st.title("📄 AI Document Summarizer + Q&A")
+
+UPLOAD_DIR = "uploads"
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+
 if "text" not in st.session_state:
     st.session_state.text = ""
 
-if "db" not in st.session_state:
-    st.session_state.db = None
+if "chunks" not in st.session_state:
+    st.session_state.chunks = None
 
-UPLOAD_DIR = "uploaded_docs"
-os.makedirs(UPLOAD_DIR, exist_ok=True)
-
-st.title("📄 AI Document Summarizer + Q&A (Hybrid AI)")
 
 uploaded = st.file_uploader(
     "Upload files",
     accept_multiple_files=True,
-    key="file_uploader_main"
+    key="uploader_unique"
 )
 
-# ---------------- FILE PROCESS ----------------
+# -------- PROCESS FILES --------
 if uploaded:
     texts = []
 
@@ -35,71 +35,47 @@ if uploaded:
         with open(path, "wb") as file:
             file.write(f.read())
 
-        # -------- PDF --------
+        # PDF
         if f.name.endswith(".pdf"):
-            text = extract_text(path, "pdf")
-            if text:
-                texts.append(text)
+            texts.append(extract_text(path, "pdf"))
 
-        # -------- CSV --------
+        # CSV
         elif f.name.endswith(".csv"):
-            text = extract_text(path, "csv")
-            if text:
-                texts.append(text)
+            texts.append(extract_text(path, "csv"))
 
-        # -------- IMAGE (GEMINI) --------
+        # IMAGE
         elif f.name.lower().endswith((".png", ".jpg", ".jpeg")):
-            st.info("🧠 Processing image with Gemini AI...")
+            with open(path, "rb") as img:
+                base64_image = base64.b64encode(img.read()).decode()
 
-            text = analyze_image(path)
+            text = call_image_llm(base64_image)
+            texts.append(text)
 
-            if "❌" in text:
-                st.error(text)
-            elif text.strip():
-                texts.append(text)
-            else:
-                st.warning("⚠️ No content extracted from image")
+    st.session_state.text = "\n".join(texts)
+    st.success("✅ Files processed")
 
-    # -------- FINAL STORE --------
-    if texts:
-        st.session_state.text = "\n".join(texts)
-        st.session_state.db = None
-        st.success("✅ Document processed successfully")
-    else:
-        st.session_state.text = ""
-        st.error("❌ Could not extract content")
 
-# ---------------- TABS ----------------
+# -------- TABS --------
 tab1, tab2, tab3 = st.tabs(["Preview", "Summary", "Q&A"])
 
-# -------- PREVIEW --------
+# Preview
 with tab1:
-    if st.session_state.text:
-        st.text_area("Preview", st.session_state.text[:2000], height=300)
+    st.text_area("Preview", st.session_state.text[:2000], height=300)
 
-# -------- SUMMARY --------
+# Summary
 with tab2:
     if st.button("Generate Summary"):
-        if not st.session_state.text:
-            st.error("⚠️ Upload document first")
-        else:
-            summary = summarize_multiple_documents(st.session_state.text)
-            st.write(summary)
+        summary = summarize_multiple_documents(st.session_state.text)
+        st.write(summary)
 
-# -------- Q&A --------
+# Q&A
 with tab3:
     if st.button("Enable Q&A"):
-        if not st.session_state.text:
-            st.error("⚠️ Upload document first")
-        else:
-            st.session_state.db = build_db(st.session_state.text)
-            st.success("Q&A Ready")
+        st.session_state.chunks = build_db(st.session_state.text)
+        st.success("Q&A Ready")
 
-    q = st.text_input("Ask a question")
+    question = st.text_input("Ask a question")
 
-    if q:
-        if not st.session_state.db:
-            st.warning("⚠️ Enable Q&A first")
-        else:
-            answer = ask_question(st.session_state.db, q)
-            st.write(answer)
+    if question and st.session_state.chunks:
+        answer = ask_question(st.session_state.chunks, question)
+        st.write(answer)

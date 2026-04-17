@@ -10,28 +10,17 @@ def build_db(text):
     return splitter.split_text(text)
 
 
-def ask_question(db, question):
-    if not db:
-        return "⚠️ No document loaded"
+def ask_question(chunks, question):
+    context = "\n\n".join(chunks[:4])
 
-    relevant = []
-
-    for chunk in db:
-        if any(word.lower() in chunk.lower() for word in question.split()):
-            relevant.append(chunk)
-
-    if not relevant:
-        relevant = db[:3]
-
-    context = "\n\n".join(relevant[:4])
-
-    return call_llm(f"""
+    prompt = f"""
 Answer ONLY using this context.
-If not found, say: Not found in document.
+If not found, say "Not found in document".
 
 Context:
 {context}
 
 Question:
 {question}
-""", 300)
+"""
+    return call_llm(prompt, 300)
