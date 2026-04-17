@@ -1,11 +1,9 @@
 import streamlit as st
 from groq import Groq
 
-# ---------------- CLIENT ----------------
 client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
 
-# ---------------- TEXT LLM ----------------
 def call_llm(prompt, max_tokens=300):
     response = client.chat.completions.create(
         model="llama-3.1-8b-instant",
@@ -15,7 +13,6 @@ def call_llm(prompt, max_tokens=300):
     return response.choices[0].message.content.strip()
 
 
-# ---------------- IMAGE VISION ----------------
 def call_vision_llm(base64_image):
     response = client.chat.completions.create(
         model="llama-3.2-11b-vision-preview",
@@ -23,7 +20,7 @@ def call_vision_llm(base64_image):
             {
                 "role": "user",
                 "content": [
-                    {"type": "text", "text": "Extract all meaningful information from this image. Provide summary and key points."},
+                    {"type": "text", "text": "Describe this image clearly. Extract all useful information."},
                     {
                         "type": "image_url",
                         "image_url": {
