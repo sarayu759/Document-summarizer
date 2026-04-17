@@ -4,15 +4,12 @@ from utils.file_handler import extract_text
 from utils.summarizer import summarize_multiple_documents
 from utils.qa_engine import build_db, ask_question
 
-# ------------------ INIT SESSION ------------------
-
+# ---------------- INIT ----------------
 if "text" not in st.session_state:
     st.session_state.text = ""
 
 if "db" not in st.session_state:
     st.session_state.db = None
-
-# ------------------ CONFIG ------------------
 
 UPLOAD_DIR = "uploaded_docs"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
@@ -21,8 +18,7 @@ st.title("📄 AI Document Summarizer + Q&A")
 
 uploaded = st.file_uploader("Upload files", accept_multiple_files=True)
 
-# ------------------ FILE PROCESSING ------------------
-
+# ---------------- FILE PROCESS ----------------
 if uploaded:
     texts = []
 
@@ -44,41 +40,41 @@ if uploaded:
         else:
             text = ""
 
-        if text.strip():
+        # only valid text
+        if text and text.strip() and "ERROR" not in text:
             texts.append(text)
 
-    # 🔥 STORE TEXT PROPERLY
-    st.session_state.text = "\n".join(texts)
-    st.session_state.db = None
+    if texts:
+        st.session_state.text = "\n".join(texts)
+        st.session_state.db = None
+        st.success("✅ Document loaded successfully")
+        st.write("DEBUG TEXT LENGTH:", len(st.session_state.text))
+    else:
+        st.session_state.text = ""
+        st.error("❌ No readable content found (image OCR or empty file)")
 
-    st.success("✅ Document loaded successfully")
-
-# ------------------ TABS ------------------
-
+# ---------------- TABS ----------------
 tab1, tab2, tab3 = st.tabs(["Preview", "Summary", "Q&A"])
 
-# ------------------ PREVIEW ------------------
-
+# ---------------- PREVIEW ----------------
 with tab1:
     if st.session_state.text:
         st.text_area("Preview", st.session_state.text[:2000], height=300)
 
-# ------------------ SUMMARY ------------------
-
+# ---------------- SUMMARY ----------------
 with tab2:
     if st.button("Generate Summary"):
-        if not st.session_state.text:
-            st.error("⚠️ Please upload a document first")
+        if not st.session_state.text or len(st.session_state.text.strip()) < 10:
+            st.error("⚠️ Please upload a valid document first")
         else:
             summary = summarize_multiple_documents(st.session_state.text)
             st.write(summary)
 
-# ------------------ Q&A ------------------
-
+# ---------------- Q&A ----------------
 with tab3:
     if st.button("Enable Q&A"):
         if not st.session_state.text:
-            st.error("⚠️ Please upload a document first")
+            st.error("⚠️ Please upload document first")
         else:
             st.session_state.db = build_db(st.session_state.text)
             st.success("Q&A Ready")

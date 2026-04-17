@@ -1,15 +1,13 @@
 from pypdf import PdfReader
 
+
 def extract_pdf_text(path):
-    try:
-        reader = PdfReader(path)
-        text = ""
+    reader = PdfReader(path)
+    text = ""
 
-        for page in reader.pages:
-            text += page.extract_text() or ""
+    for page in reader.pages:
+        t = page.extract_text()
+        if t:
+            text += t + "\n"
 
-        return text
-
-    except Exception as e:
-        print("PDF error:", e)
-        return ""
+    return text

@@ -1,10 +1,7 @@
 streamlit
 groq
-python-dotenv
-langchain
-langchain-community
-langchain-text-splitters
 pypdf
 pandas
 pillow
-numpy
+pytesseract
+langchain-text-splitters

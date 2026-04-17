@@ -1,17 +1,35 @@
+import pytesseract
+from PIL import Image
+import os
+
+# 🔥 SET TESSERACT PATH (VERY IMPORTANT)
+pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+
+
 def extract_image_text(path):
     try:
-        from PIL import Image
-        import pytesseract
+        # ✅ Check file exists
+        if not os.path.exists(path):
+            return ""
 
-        pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
-
+        # ✅ Open image
         img = Image.open(path)
+
+        # ✅ Convert to RGB (fix some PNG issues)
+        img = img.convert("RGB")
+
+        # ✅ OCR extraction
         text = pytesseract.image_to_string(img)
 
-        print("OCR TEXT:", text)  # debug
+        # ✅ Clean text
+        text = text.strip()
 
-        return text.strip()
+        # ❌ If no text found
+        if not text:
+            return ""
+
+        return text
 
     except Exception as e:
-        print("OCR ERROR:", e)
+        print("Image OCR Error:", e)
         return ""
