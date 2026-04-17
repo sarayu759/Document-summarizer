@@ -5,3 +5,4 @@ pandas
 pillow
 pytesseract
 langchain-text-splitters
+python-dotenv
