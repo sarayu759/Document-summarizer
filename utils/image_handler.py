@@ -1,21 +1,15 @@
-import base64
-from utils.llm import call_vision_llm
-
+from PIL import Image
+import pytesseract
 
 def extract_image_text(path):
     try:
-        # read image
-        with open(path, "rb") as f:
-            image_bytes = f.read()
+        img = Image.open(path)
+        text = pytesseract.image_to_string(img)
 
-        # convert to base64
-        base64_image = base64.b64encode(image_bytes).decode("utf-8")
+        if text.strip():
+            return text
 
-        # call vision model
-        result = call_vision_llm(base64_image)
-
-        return result
+        return "⚠️ No readable text found in image"
 
     except Exception as e:
-        print("Image processing error:", e)
-        return ""
+        return f"❌ OCR Error: {str(e)}"
