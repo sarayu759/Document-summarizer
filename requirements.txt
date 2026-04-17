@@ -1,9 +1,9 @@
 streamlit
 groq
-google-generativeai
+openai
 pypdf
 pandas
 langchain-text-splitters
+chromadb
 python-dotenv
-google-generativeai==0.5.4
 Pillow
