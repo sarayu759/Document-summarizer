@@ -10,6 +10,8 @@ from utils.qa_engine import build_db, ask_question
 from utils.llm import call_image_llm
 from utils.image_handler import extract_image_text
 
+st.set_page_config(page_title="AI Doc Summarizer", layout="wide")
+
 st.title("📄 AI Document Summarizer + Q&A")
 
 UPLOAD_DIR = "uploads"
@@ -18,12 +20,12 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 if "text" not in st.session_state:
     st.session_state.text = ""
 
-if "chunks" not in st.session_state:
-    st.session_state.chunks = None
+if "db" not in st.session_state:
+    st.session_state.db = None
 
 
 def compress_image(path):
-    img = Image.open(path)
+    img = Image.open(path).convert("RGB")
     img = img.resize((512, 512))
     buf = io.BytesIO()
     img.save(buf, format="PNG")
@@ -61,7 +63,7 @@ if uploaded:
             text = call_image_llm(base64_img)
 
             # fallback if API fails
-            if "❌" in text or "⚠️" in text:
+            if not text or "error" in text.lower():
                 text = extract_image_text(path)
 
             texts.append(text)
@@ -78,14 +80,20 @@ with tab1:
 
 with tab2:
     if st.button("Generate Summary"):
-        st.write(summarize_multiple_documents(st.session_state.text))
+        if st.session_state.text:
+            st.write(summarize_multiple_documents(st.session_state.text))
+        else:
+            st.warning("⚠️ Upload document first")
 
 with tab3:
     if st.button("Enable Q&A"):
-        st.session_state.chunks = build_db(st.session_state.text)
-        st.success("Q&A Ready")
+        if st.session_state.text:
+            st.session_state.db = build_db(st.session_state.text)
+            st.success("Q&A Ready")
+        else:
+            st.warning("⚠️ Upload document first")
 
     q = st.text_input("Ask question")
 
-    if q and st.session_state.chunks:
-        st.write(ask_question(st.session_state.chunks, q))
+    if q and st.session_state.db:
+        st.write(ask_question(st.session_state.db, q))

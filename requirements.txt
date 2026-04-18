@@ -4,5 +4,6 @@ openai
 pypdf
 pandas
 langchain-text-splitters
-pytesseract
+chromadb
+protobuf==3.20.3
 Pillow
