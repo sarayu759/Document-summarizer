@@ -2,7 +2,7 @@ FROM python:3.10-slim
 
 WORKDIR /app
 
-# 🔥 INSTALL TESSERACT (THIS IS THE FIX)
+# 🔥 INSTALL TESSERACT (CRITICAL STEP)
 RUN apt-get update && apt-get install -y \
     tesseract-ocr \
     libtesseract-dev \
