@@ -1,9 +1,14 @@
-from utils.pdf_handler import extract_pdf_text
-from utils.csv_handler import extract_csv_text
+import pandas as pd
+from pypdf import PdfReader
 
-def extract_text(path, file_type):
-    if file_type == "pdf":
-        return extract_pdf_text(path)
-    elif file_type == "csv":
-        return extract_csv_text(path)
+
+def extract_text(path, filetype):
+    if filetype == "pdf":
+        reader = PdfReader(path)
+        return "".join([p.extract_text() or "" for p in reader.pages])
+
+    elif filetype == "csv":
+        df = pd.read_csv(path)
+        return df.to_string()
+
     return ""

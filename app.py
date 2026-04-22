@@ -1,18 +1,13 @@
 import streamlit as st
 import os
-import base64
-from PIL import Image
-import io
 
 from utils.file_handler import extract_text
-from utils.summarizer import summarize_multiple_documents
-from utils.qa_engine import build_db, ask_question
-from utils.llm import call_image_llm
 from utils.image_handler import extract_image_text
+from utils.llm import call_llm
+from utils.text_utils import chunk_text, get_relevant_chunks
 
 st.set_page_config(page_title="AI Doc Summarizer", layout="wide")
-
-st.title("📄 AI Document Summarizer + Q&A")
+st.title("📄 AI Document Summarizer + Q&A (FREE)")
 
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
@@ -20,80 +15,76 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 if "text" not in st.session_state:
     st.session_state.text = ""
 
-if "db" not in st.session_state:
-    st.session_state.db = None
+if "chunks" not in st.session_state:
+    st.session_state.chunks = []
 
 
-def compress_image(path):
-    img = Image.open(path).convert("RGB")
-    img = img.resize((512, 512))
-    buf = io.BytesIO()
-    img.save(buf, format="PNG")
-    return base64.b64encode(buf.getvalue()).decode()
+# -------- FILE UPLOAD --------
+uploaded_files = st.file_uploader("Upload PDF / CSV / Images", accept_multiple_files=True)
 
+if uploaded_files:
+    all_text = []
 
-uploaded = st.file_uploader(
-    "Upload files",
-    accept_multiple_files=True,
-    key="unique_uploader"
-)
+    for file in uploaded_files:
+        path = os.path.join(UPLOAD_DIR, file.name)
 
-# -------- PROCESS --------
-if uploaded:
-    texts = []
+        with open(path, "wb") as f:
+            f.write(file.read())
 
-    for f in uploaded:
-        path = os.path.join(UPLOAD_DIR, f.name)
+        st.write(f"📄 Processing: {file.name}")
 
-        with open(path, "wb") as file:
-            file.write(f.read())
+        if file.name.endswith(".pdf"):
+            text = extract_text(path, "pdf")
 
-        if f.name.endswith(".pdf"):
-            texts.append(extract_text(path, "pdf"))
+        elif file.name.endswith(".csv"):
+            text = extract_text(path, "csv")
 
-        elif f.name.endswith(".csv"):
-            texts.append(extract_text(path, "csv"))
+        elif file.name.lower().endswith(("png", "jpg", "jpeg")):
+            text = extract_image_text(path)
 
-        elif f.name.lower().endswith((".png", ".jpg", ".jpeg")):
+        else:
+            text = ""
 
-            base64_img = compress_image(path)
+        all_text.append(text)
 
-            st.info("🧠 Processing image...")
+    st.session_state.text = "\n".join(all_text)
+    st.session_state.chunks = chunk_text(st.session_state.text)
 
-            text = call_image_llm(base64_img)
-
-            # fallback if API fails
-            if not text or "error" in text.lower():
-                text = extract_image_text(path)
-
-            texts.append(text)
-
-    st.session_state.text = "\n".join(texts)
     st.success("✅ Files processed")
 
 
-# -------- UI --------
+# -------- TABS --------
 tab1, tab2, tab3 = st.tabs(["Preview", "Summary", "Q&A"])
 
+# Preview
 with tab1:
     st.text_area("Preview", st.session_state.text[:2000], height=300)
 
+# Summary
 with tab2:
     if st.button("Generate Summary"):
         if st.session_state.text:
-            st.write(summarize_multiple_documents(st.session_state.text))
+            prompt = f"Summarize clearly:\n{st.session_state.text[:3000]}"
+            st.write(call_llm(prompt))
         else:
-            st.warning("⚠️ Upload document first")
+            st.warning("Upload document first")
 
+# Q&A
 with tab3:
-    if st.button("Enable Q&A"):
-        if st.session_state.text:
-            st.session_state.db = build_db(st.session_state.text)
-            st.success("Q&A Ready")
-        else:
-            st.warning("⚠️ Upload document first")
+    question = st.text_input("Ask question")
 
-    q = st.text_input("Ask question")
+    if question:
+        chunks = get_relevant_chunks(st.session_state.chunks, question)
+        context = "\n".join(chunks)
 
-    if q and st.session_state.db:
-        st.write(ask_question(st.session_state.db, q))
+        prompt = f"""
+Answer ONLY from context.
+
+Context:
+{context}
+
+Question:
+{question}
+"""
+
+        st.write(call_llm(prompt))

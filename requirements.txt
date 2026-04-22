@@ -1,9 +1,7 @@
 streamlit
 groq
-openai
 pypdf
 pandas
-langchain-text-splitters
-chromadb
-protobuf==3.20.3
-Pillow
+pillow
+pytesseract
+python-dotenv

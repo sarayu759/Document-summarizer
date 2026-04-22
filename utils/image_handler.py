@@ -1,31 +1,21 @@
+import pytesseract
 from PIL import Image
-import base64
-import io
 
-from utils.llm import call_image_llm
+# IMPORTANT
+pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
 
 
 def extract_image_text(path):
     try:
-        # ✅ Load image safely
-        img = Image.open(path).convert("RGB")
+        img = Image.open(path)
 
-        # ✅ Resize (prevents large request errors)
-        img = img.resize((512, 512))
+        # improve OCR
+        img = img.convert("L")
+        img = img.resize((img.width * 2, img.height * 2))
 
-        # ✅ Convert to base64
-        buffer = io.BytesIO()
-        img.save(buffer, format="PNG")
-        base64_image = base64.b64encode(buffer.getvalue()).decode()
+        text = pytesseract.image_to_string(img, config='--psm 6')
 
-        # ✅ Send to AI model
-        result = call_image_llm(base64_image)
-
-        # ✅ Clean fallback
-        if not result or "error" in result.lower():
-            return "⚠️ Could not extract meaningful content from image"
-
-        return result
+        return text
 
     except Exception as e:
-        return f"❌ Image processing failed: {str(e)}"
+        return f"OCR Error: {str(e)}"
